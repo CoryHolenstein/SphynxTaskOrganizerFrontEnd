@@ -1,5 +1,6 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Box } from '@mui/material'
 import HomePage from './pages/private/HomePage'
 import AboutPage from './pages/private/AboutPage'
 import TasksPage from './pages/private/TasksPage'
@@ -10,14 +11,16 @@ function App() {
 
   return (
     <ThemeContextProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </BrowserRouter>
+      <Box sx={{ backgroundColor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </BrowserRouter>
+      </Box>
     </ThemeContextProvider>
   )
 }

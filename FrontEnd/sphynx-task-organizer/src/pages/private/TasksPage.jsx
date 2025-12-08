@@ -1,10 +1,14 @@
 
+
 import React, { useEffect, useState } from 'react';
 import { Container, TextField, Button, Box, Card, CardContent, Typography, Chip, Select, MenuItem, FormControl, InputLabel, Alert } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import MainHeader from '../../components/MainHeader';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 
 const TasksPage = () => {
+    const muiTheme = useMuiTheme();
     // Configurable task limit
     const MAX_TASKS_PER_USER = 100;
 
@@ -15,7 +19,7 @@ const TasksPage = () => {
 
 
     const [tasks, setTasks] = useState(mockTasks);
-    const [showCreateTask, setShowCreateTask] = useState(true);
+    const [showCreateTask, setShowCreateTask] = useState(false);
     const [filterRepeat, setFilterRepeat] = useState('all');
 
     const [taskName, setTaskName] = useState('');
@@ -78,7 +82,8 @@ const TasksPage = () => {
 
 
 return(
-    <Box sx={{ pt: 10, pb: 4 }}>
+    <Box sx={{ pt: 10, pb: 4, backgroundColor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
+        <MainHeader />
         <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -190,8 +195,11 @@ return(
                             <Card 
                                 key={task.id}
                                 sx={{
+                                    backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                     '&:hover': {
-                                        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                        boxShadow: muiTheme.palette.mode === 'dark' 
+                                            ? '0 8px 24px rgba(255, 255, 255, 0.1)'
+                                            : '0 8px 24px rgba(0, 0, 0, 0.15)',
                                         transform: 'translateY(-4px)',
                                     },
                                     transition: 'all 0.3s ease',
@@ -199,7 +207,7 @@ return(
                             >
                                 <CardContent>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                                        <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', flex: 1 }}>
+                                        <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', flex: 1, color: muiTheme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
                                             {task.name}
                                         </Typography>
                                         <Chip 
@@ -209,10 +217,10 @@ return(
                                             size="small"
                                         />
                                     </Box>
-                                    <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ mb: 1, color: muiTheme.palette.mode === 'dark' ? '#b0b0b0' : 'textSecondary' }}>
                                         {task.description}
                                     </Typography>
-                                    <Typography variant="body2" sx={{ mb: 2, color: '#1976d2', fontWeight: 'bold' }}>
+                                    <Typography variant="body2" sx={{ mb: 2, color: muiTheme.palette.mode === 'dark' ? '#64b5f6' : '#1976d2', fontWeight: 'bold' }}>
                                         Due: {new Date(task.dueDate).toLocaleDateString()}
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 1 }}>

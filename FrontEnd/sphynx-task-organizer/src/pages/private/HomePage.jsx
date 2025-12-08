@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Container, Card, CardContent, Typography, Button, Grid, LinearProgress } from '@mui/material';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 import MainHeader from '../../components/MainHeader';
 import TaskIcon from '@mui/icons-material/Task';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -8,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
     const navigate = useNavigate();
+    const muiTheme = useMuiTheme();
     
     // Mock user data
     const userData = {
@@ -21,7 +23,7 @@ const HomePage = () => {
     const taskCompletionPercentage = (userData.completedTasks / userData.totalTasks) * 100;
 
     return (
-        <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+        <Box sx={{ minHeight: '100vh', backgroundColor: (theme) => theme.palette.background.default }}>
             <MainHeader />
             <Box sx={{ pt: 10, pb: 4 }}>
                 <Container maxWidth="lg">
@@ -42,8 +44,11 @@ const HomePage = () => {
                                 height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
+                                backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                 '&:hover': {
-                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                    boxShadow: muiTheme.palette.mode === 'dark'
+                                        ? '0 8px 24px rgba(255, 255, 255, 0.1)'
+                                        : '0 8px 24px rgba(0, 0, 0, 0.15)',
                                     transform: 'translateY(-4px)',
                                 },
                                 transition: 'all 0.3s ease',
@@ -65,8 +70,11 @@ const HomePage = () => {
                                 height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
+                                backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                 '&:hover': {
-                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                    boxShadow: muiTheme.palette.mode === 'dark'
+                                        ? '0 8px 24px rgba(255, 255, 255, 0.1)'
+                                        : '0 8px 24px rgba(0, 0, 0, 0.15)',
                                     transform: 'translateY(-4px)',
                                 },
                                 transition: 'all 0.3s ease',
@@ -88,8 +96,11 @@ const HomePage = () => {
                                 height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
+                                backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                 '&:hover': {
-                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                    boxShadow: muiTheme.palette.mode === 'dark'
+                                        ? '0 8px 24px rgba(255, 255, 255, 0.1)'
+                                        : '0 8px 24px rgba(0, 0, 0, 0.15)',
                                     transform: 'translateY(-4px)',
                                 },
                                 transition: 'all 0.3s ease',
@@ -111,8 +122,11 @@ const HomePage = () => {
                                 height: '100%',
                                 display: 'flex',
                                 flexDirection: 'column',
+                                backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                 '&:hover': {
-                                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                                    boxShadow: muiTheme.palette.mode === 'dark'
+                                        ? '0 8px 24px rgba(255, 255, 255, 0.1)'
+                                        : '0 8px 24px rgba(0, 0, 0, 0.15)',
                                     transform: 'translateY(-4px)',
                                 },
                                 transition: 'all 0.3s ease',
@@ -131,7 +145,7 @@ const HomePage = () => {
                     </Grid>
 
                     {/* Quick Actions */}
-                    <Card sx={{ mb: 4 }}>
+                    <Card sx={{ mb: 4, backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff' }}>
                         <CardContent>
                             <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
                                 Quick Actions
