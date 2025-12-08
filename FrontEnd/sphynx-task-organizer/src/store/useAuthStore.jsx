@@ -11,7 +11,7 @@ const useAuthStore = create(
     // Login with incognito mode
     loginIncognito: (username = 'Guest User') => {
       const incognitoUser = {
-        id: Math.random().toString(36).substring(7),
+        id: 'hornsnickle',
         username: username,
         email: `${username.toLowerCase().replace(' ', '.')}@incognito.local`,
         isIncognito: true,
@@ -82,4 +82,5 @@ const useAuthStore = create(
   }))
 );
 
+export { useAuthStore };
 export default useAuthStore;

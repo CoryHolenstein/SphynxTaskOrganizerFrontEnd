@@ -1,75 +1,95 @@
 
 
 import React, { useEffect, useState } from 'react';
-import { Container, TextField, Button, Box, Card, CardContent, Typography, Chip, Select, MenuItem, FormControl, InputLabel, Alert } from '@mui/material';
+import { Container, TextField, Button, Box, Card, CardContent, Typography, Chip, Select, MenuItem, FormControl, InputLabel, Alert, CircularProgress } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import MainHeader from '../../components/MainHeader';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
+import { createTask } from '../../api/CreateTask';
+import { getAllTasks } from '../../api/GetTasks';
+import { deleteTask } from '../../api/DeleteTask';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const TasksPage = () => {
     const muiTheme = useMuiTheme();
-    // Configurable task limit
+    const { loginIncognito } = useAuthStore();
+    const userId = useAuthStore((state) => state.user?.id);
     const MAX_TASKS_PER_USER = 100;
 
-    const mockTasks = [{ id: 1, name: 'Task 1', description: 'Description for Task 1', dueDate: '2024-12-01', repeat: 'yearly' },
-                        { id: 2, name: 'Task 2', description: 'Description for Task 2', dueDate: '2024-11-15', repeat: 'monthly' },
-                        { id: 3, name: 'Task 3', description: 'Description for Task 3', dueDate: '2024-10-20', repeat: 'weekly' }       
-    ]
-
-    const suggestedTasks = [
-        { id: 1, name: 'Drink Water', description: 'Hydrate!!', dueDate: '', repeat: 'daily' },
-        { id: 2, name: 'Exercise', description: 'Get moving for at least 30 minutes.', dueDate: '', repeat: 'daily' },
-        { id: 3, name: 'Read a Book', description: 'Spend some time reading.', dueDate: '', repeat: 'weekly' },
-        { id: 4, name: 'Grocery Shopping', description: 'Buy groceries for the week.', dueDate: '', repeat: 'weekly' },
-        { id: 5, name: 'Clean the Living Spaces', description: 'Tidy up your living space.', dueDate: '', repeat: 'monthly' },
-        { id: 6, name: 'Pay Bills', description: 'Take care of monthly expenses.', dueDate: '', repeat: 'monthly' },
-        { id: 7, name: 'Annual Health Checkup', description: 'Schedule a health checkup.', dueDate: '', repeat: 'yearly' },
-        { id: 8, name: 'Review Finances', description: 'Assess your financial situation.', dueDate: '', repeat: 'yearly' },
-
-        
-    ]
-
-
-    const [tasks, setTasks] = useState(mockTasks);
+    const [tasks, setTasks] = useState([]);
     const [showCreateTask, setShowCreateTask] = useState(false);
     const [filterRepeat, setFilterRepeat] = useState('all');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const [taskName, setTaskName] = useState('');
     const [taskDescription, setTaskDescription] = useState('');
     const [taskDueDate, setTaskDueDate] = useState('');
     const [taskRepeat, setTaskRepeat] = useState('weekly');
 
-
     const toggleCreateTask = () => {
         setShowCreateTask(!showCreateTask);
     };
 
-    const handleCreateTask = (e) => {
+    const handleCreateTask = async (e) => {
         e.preventDefault();
         
-        if (tasks.length >= MAX_TASKS_PER_USER) {
-            alert(`Task limit of ${MAX_TASKS_PER_USER} reached. Please delete a task before adding a new one.`);
+        if (!userId) {
+            setError('User not authenticated');
             return;
         }
 
-        const newTask = {
-            id: tasks.length + 1,
-            name: taskName,
-            description: taskDescription,
-            dueDate: taskDueDate,
-            repeat: taskRepeat
-        };
+        if (tasks.length >= MAX_TASKS_PER_USER) {
+            setError(`Task limit of ${MAX_TASKS_PER_USER} reached. Please delete a task before adding a new one.`);
+            return;
+        }
 
-        setTasks([...tasks, newTask]);
-        setTaskName('');
-        setTaskDescription('');
-        setTaskDueDate('');
-        setTaskRepeat('weekly');
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const payload = {
+                userId,
+                name: taskName,
+                description: taskDescription,
+                dueDate: taskDueDate,
+                repeat: taskRepeat
+            };
+
+            const result = await createTask(payload);
+            setTasks([...tasks, result.item]);
+            setTaskName('');
+            setTaskDescription('');
+            setTaskDueDate('');
+            setTaskRepeat('weekly');
+            setShowCreateTask(false);
+        } catch (err) {
+            setError('Failed to create task. Please try again.');
+            console.error('Error creating task:', err);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
-    const handleDeleteTask = (taskId) => {
-        setTasks(tasks.filter(task => task.id !== taskId));
+    const handleDeleteTask = async (taskId) => {
+        if (!userId) {
+            setError('User not authenticated');
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            await deleteTask(userId, taskId);
+            setTasks(tasks.filter(task => task.taskId !== taskId));
+        } catch (err) {
+            setError('Failed to delete task. Please try again.');
+            console.error('Error deleting task:', err);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const filteredTasks = filterRepeat === 'all' ? tasks : tasks.filter(task => task.repeat === filterRepeat);
@@ -87,8 +107,37 @@ const TasksPage = () => {
     };
 
     useEffect(() => {
-        console.log('Tasks updated:', tasks);
+        // Initialize incognito user if not already authenticated
+        if (!userId) {
+            loginIncognito();
+        }
+    }, [userId, loginIncognito]);
 
+    useEffect(() => {
+        // Load tasks when userId is available
+        if (userId) {
+            loadTasks();
+        }
+    }, [userId]);
+
+    const loadTasks = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            console.log('[TasksPage] Loading tasks for userId:', userId);
+            const fetchedTasks = await getAllTasks(userId);
+            setTasks(fetchedTasks || []);
+            console.log('[TasksPage] Loaded tasks:', fetchedTasks);
+        } catch (err) {
+            setError('Failed to load tasks. Please refresh the page.');
+            console.error('[TasksPage] Error loading tasks:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        console.log('Tasks updated:', tasks);
     }, [tasks]);
 
 
@@ -102,11 +151,17 @@ return(
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
                     Tasks Page
                 </Typography>
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                        {error}
+                    </Alert>
+                )}
                 <Button 
                     variant="contained" 
                     color="primary" 
                     onClick={toggleCreateTask}
                     sx={{ mb: 2 }}
+                    disabled={isLoading}
                 >
                     {showCreateTask ? 'Hide Create Task' : 'Show Create Task'}
                 </Button>
@@ -132,6 +187,7 @@ return(
                                     value={taskName}
                                     onChange={(e) => setTaskName(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                                 <TextField 
                                     label="Description" 
@@ -141,6 +197,7 @@ return(
                                     rows={4}
                                     value={taskDescription}
                                     onChange={(e) => setTaskDescription(e.target.value)}
+                                    disabled={isLoading}
                                 />
                                 <TextField 
                                     label="Due Date" 
@@ -151,8 +208,9 @@ return(
                                     value={taskDueDate}
                                     onChange={(e) => setTaskDueDate(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
-                                <FormControl fullWidth>
+                                <FormControl fullWidth disabled={isLoading}>
                                     <InputLabel>Repeat</InputLabel>
                                     <Select 
                                         value={taskRepeat}
@@ -170,9 +228,9 @@ return(
                                     color="primary" 
                                     type="submit"
                                     sx={{ alignSelf: 'flex-start' }}
-                                    disabled={isTaskLimitReached}
+                                    disabled={isTaskLimitReached || isLoading}
                                 >
-                                    Create Task
+                                    {isLoading ? <CircularProgress size={24} /> : 'Create Task'}
                                 </Button>
                             </Box>
                         </form>
@@ -187,7 +245,7 @@ return(
                 <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
                     Tasks remaining: {tasksRemaining}
                 </Typography>
-                <FormControl sx={{ minWidth: 200, mb: 3 }}>
+                <FormControl sx={{ minWidth: 200, mb: 3 }} disabled={isLoading}>
                     <InputLabel>Filter by Repeat</InputLabel>
                     <Select 
                         value={filterRepeat}
@@ -202,11 +260,17 @@ return(
                     </Select>
                 </FormControl>
 
+                {isLoading && filteredTasks.length === 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr', md: '1fr' }, gap: 2 }}>
                     {filteredTasks.length > 0 ? (
                         filteredTasks.map((task) => (
                             <Card 
-                                key={task.id}
+                                key={task.taskId}
                                 sx={{
                                     backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
                                     '&:hover': {
@@ -241,6 +305,7 @@ return(
                                             variant="outlined" 
                                             size="small"
                                             startIcon={<EditIcon />}
+                                            disabled={isLoading}
                                         >
                                             Edit
                                         </Button>
@@ -249,7 +314,8 @@ return(
                                             color="error" 
                                             size="small"
                                             startIcon={<DeleteIcon />}
-                                            onClick={() => handleDeleteTask(task.id)}
+                                            onClick={() => handleDeleteTask(task.taskId)}
+                                            disabled={isLoading}
                                         >
                                             Delete
                                         </Button>
