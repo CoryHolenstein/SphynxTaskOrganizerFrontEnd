@@ -17,6 +17,19 @@ const TasksPage = () => {
                         { id: 3, name: 'Task 3', description: 'Description for Task 3', dueDate: '2024-10-20', repeat: 'weekly' }       
     ]
 
+    const suggestedTasks = [
+        { id: 1, name: 'Drink Water', description: 'Hydrate!!', dueDate: '', repeat: 'daily' },
+        { id: 2, name: 'Exercise', description: 'Get moving for at least 30 minutes.', dueDate: '', repeat: 'daily' },
+        { id: 3, name: 'Read a Book', description: 'Spend some time reading.', dueDate: '', repeat: 'weekly' },
+        { id: 4, name: 'Grocery Shopping', description: 'Buy groceries for the week.', dueDate: '', repeat: 'weekly' },
+        { id: 5, name: 'Clean the Living Spaces', description: 'Tidy up your living space.', dueDate: '', repeat: 'monthly' },
+        { id: 6, name: 'Pay Bills', description: 'Take care of monthly expenses.', dueDate: '', repeat: 'monthly' },
+        { id: 7, name: 'Annual Health Checkup', description: 'Schedule a health checkup.', dueDate: '', repeat: 'yearly' },
+        { id: 8, name: 'Review Finances', description: 'Assess your financial situation.', dueDate: '', repeat: 'yearly' },
+
+        
+    ]
+
 
     const [tasks, setTasks] = useState(mockTasks);
     const [showCreateTask, setShowCreateTask] = useState(false);
