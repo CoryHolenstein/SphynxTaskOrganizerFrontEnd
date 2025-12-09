@@ -71,27 +71,10 @@ const Landing = () => {
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
 
 
-             <Button
-              variant="outlined"
-              size="large"
-              onClick={handleSignUp}
-              sx={{
-                borderColor: 'white',
-                color: 'white',
-                px: 4,
-                py: 1.5,
-                fontSize: '16px',
-                fontWeight: 'bold',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  borderColor: 'white'
-                }
-              }}
-            >
-              Get Started
-            </Button>
+    
 
-              <LoginButton />
+              <LoginButton name={"Get Started"} />
+               <LoginButton />
           </Box>
         </Container>
       </Box>

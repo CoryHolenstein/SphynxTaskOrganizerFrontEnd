@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Container, Card, CardContent, Typography, Button, Grid, LinearProgress } from '@mui/material';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 import MainHeader from '../../components/MainHeader';
@@ -6,10 +6,26 @@ import TaskIcon from '@mui/icons-material/Task';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from 'react-oidc-context';
+import useAuthStore from "../../store/useAuthStore";
 
 const HomePage = () => {
     const navigate = useNavigate();
     const muiTheme = useMuiTheme();
+    const auth = useAuth();
+
+    const userEmail = useAuthStore((s) => s.user.email);
+
+
+    useEffect(() => {
+        console.log('User Info:', auth.user);
+        console.log('store info, ', useAuthStore.getState());
+        console.log('User Email from Store:', userEmail);
+
+    }, []);
+
+    if (auth.isLoading) return <div>Loading...</div>;
+    if (auth.error) return <div>Error: {auth.error.message}</div>;
     
     // Mock user data
     const userData = {
@@ -30,7 +46,7 @@ const HomePage = () => {
                     {/* Welcome Section */}
                     <Box sx={{ mb: 4 }}>
                         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                            Welcome, {userData.name}! 👋
+                            Welcome, {userEmail}! 👋
                         </Typography>
                         <Typography variant="body1" color="textSecondary">
                             Last activity: {userData.lastActivityDate}

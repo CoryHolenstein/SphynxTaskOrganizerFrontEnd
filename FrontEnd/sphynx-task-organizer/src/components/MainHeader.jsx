@@ -65,7 +65,7 @@ const MainHeader = () => {
       >
         <MenuItem
           onClick={() => {
-            navigate('/');
+            navigate('/home');
             handleMenuClose();
           }}
           sx={{
@@ -116,6 +116,24 @@ const MainHeader = () => {
             <SettingsIcon fontSize="medium" />
           </ListItemIcon>
           <ListItemText primary="Settings" primaryTypographyProps={{ fontSize: '1.1rem' }} />
+        </MenuItem>
+         <MenuItem
+          onClick={() => {
+            navigate('/logout');
+            handleMenuClose();
+          }}
+          sx={{
+            py: 2.5,
+            px: 3,
+            '&:hover': {
+              backgroundColor: '#f5f5f5',
+            },
+          }}
+        >
+          <ListItemIcon sx={{ mr: 2, color: '#1976d2' }}>
+            <SettingsIcon fontSize="medium" />
+          </ListItemIcon>
+          <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: '1.1rem' }} />
         </MenuItem>
       </Menu>
     </>

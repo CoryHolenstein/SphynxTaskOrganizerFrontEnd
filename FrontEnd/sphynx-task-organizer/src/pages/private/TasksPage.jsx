@@ -14,7 +14,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 const TasksPage = () => {
     const muiTheme = useMuiTheme();
     const { loginIncognito } = useAuthStore();
-    const userId = useAuthStore((state) => state.user?.id);
+    const userId = useAuthStore((state) => state.user?.email);
     const MAX_TASKS_PER_USER = 100;
 
     const [tasks, setTasks] = useState([]);

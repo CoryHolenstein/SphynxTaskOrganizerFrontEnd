@@ -1,25 +1,33 @@
-// App.js
-
+import { Button } from "@mui/material";
 import { useAuth } from "react-oidc-context";
 
-function LoginButton() {
+export default function LoginButton({ name = "Sign In" }) {
   const auth = useAuth();
 
-  const signOutRedirect = () => {
-    const clientId = "57sdvrue6aqa3tj35vk64gfakv";
-    const logoutUri = "http://localhost:5173/logout";
-    const cognitoDomain = "https://us-east-1rrws7xxku.auth.us-east-1.amazoncognito.com";
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+  const handleLogin = () => {
+    auth.signinRedirect();
   };
 
-  
-
   return (
-    <div>
-      <button onClick={() => auth.signinRedirect()}>Sign in</button>
-      <button onClick={() => signOutRedirect()}>Sign out</button>
-    </div>
+    <Button
+      variant="outlined"
+      size="large"
+      onClick={handleLogin}
+      sx={{
+        borderColor: "white",
+        color: "white",
+        px: 4,
+        py: 1.5,
+        fontSize: "16px",
+        fontWeight: "bold",
+        textTransform: "none",
+        "&:hover": {
+          backgroundColor: "rgba(255, 255, 255, 0.1)",
+          borderColor: "white"
+        }
+      }}
+    >
+      {name}
+    </Button>
   );
 }
-
-export default LoginButton;
