@@ -8,39 +8,72 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
 import useAuthStore from "../../store/useAuthStore";
+import Footer from '../../components/Footer';
+import { getAllTasks } from "../../api/GetTasks";
+
 
 const HomePage = () => {
     const navigate = useNavigate();
     const muiTheme = useMuiTheme();
     const auth = useAuth();
-
-    const userEmail = useAuthStore((s) => s.user.email);
+    const userId = useAuthStore((s) => s.user?.email);
+    const [tasks, setTasks] = useState([]);
+    const [loadingTasks, setLoadingTasks] = useState(true);
 
 
     useEffect(() => {
-        console.log('User Info:', auth.user);
-        console.log('store info, ', useAuthStore.getState());
-        console.log('User Email from Store:', userEmail);
+    if (!userId) return;
 
-    }, []);
+    async function loadTasks() {
+        try {
+        const fetched = await getAllTasks(userId);
+        setTasks(fetched || []);
+        } catch (err) {
+        console.error("[HomePage] Failed to load tasks", err);
+        setTasks([]);
+        } finally {
+        setLoadingTasks(false);
+        }
+    }
+
+    loadTasks();
+    }, [userId]);
+
+
+/*
+    useEffect(() => {
+        if (!auth.isAuthenticated) {
+            navigate("/");
+        }
+
+    }, [auth.isAuthenticated, navigate]);
+*/
+
+    const userEmail = useAuthStore((s) => s.user?.email);
+
 
     if (auth.isLoading) return <div>Loading...</div>;
     if (auth.error) return <div>Error: {auth.error.message}</div>;
     
-    // Mock user data
-    const userData = {
-        name: 'User',
-        totalTasks: 15,
-        completedTasks: 8,
-        upcomingTasks: 3,
-        lastActivityDate: new Date().toLocaleDateString()
-    };
 
-    const taskCompletionPercentage = (userData.completedTasks / userData.totalTasks) * 100;
+    const today = new Date();
+
+    const totalTasks = tasks.length;
+
+    const completedTasks = tasks.filter(
+    (t) => new Date(t.dueDate) < today
+    ).length;
+
+    const upcomingTasks = tasks.filter(
+    (t) => new Date(t.dueDate) >= today
+    ).length;
+
+    const taskCompletionPercentage =
+    totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
 
     return (
         <Box sx={{ minHeight: '100vh', backgroundColor: (theme) => theme.palette.background.default }}>
-            <MainHeader />
             <Box sx={{ pt: 10, pb: 4 }}>
                 <Container maxWidth="lg">
                     {/* Welcome Section */}
@@ -49,8 +82,9 @@ const HomePage = () => {
                             Welcome, {userEmail}! 👋
                         </Typography>
                         <Typography variant="body1" color="textSecondary">
-                            Last activity: {userData.lastActivityDate}
+                        Last activity: {new Date().toLocaleDateString()}
                         </Typography>
+
                     </Box>
 
                     {/* Stats Grid */}
@@ -75,7 +109,7 @@ const HomePage = () => {
                                         Total Tasks
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: '#1976d2', fontWeight: 'bold' }}>
-                                        {userData.totalTasks}
+                                        {totalTasks}
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -101,7 +135,7 @@ const HomePage = () => {
                                         Completed
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 'bold' }}>
-                                        {userData.completedTasks}
+                                        {completedTasks}
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -127,8 +161,13 @@ const HomePage = () => {
                                         Upcoming
                                     </Typography>
                                     <Typography variant="h4" sx={{ color: '#ff9800', fontWeight: 'bold' }}>
-                                        {userData.upcomingTasks}
+                                        {upcomingTasks}
                                     </Typography>
+                                    <Typography variant="h4">
+                                        {Math.round(taskCompletionPercentage)}%
+                                    </Typography>
+                                    <LinearProgress value={taskCompletionPercentage} />
+
                                 </CardContent>
                             </Card>
                         </Grid>
@@ -187,6 +226,7 @@ const HomePage = () => {
                 </Container>
             </Box>
         </Box>
+        
     );
 }
 

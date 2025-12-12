@@ -145,7 +145,6 @@ const TasksPage = () => {
 
 return(
     <Box sx={{ pt: 10, pb: 4, backgroundColor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
-        <MainHeader />
         <Container maxWidth="lg">
             <Box sx={{ mb: 4 }}>
                 <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>

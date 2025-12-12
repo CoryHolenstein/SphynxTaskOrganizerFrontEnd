@@ -18,7 +18,6 @@ const SettingsPage = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: (theme) => theme.palette.background.default }}>
-      <MainHeader />
       <Box sx={{ pt: 10, pb: 4 }}>
         <Container maxWidth="md">
           <Box sx={{ mb: 4 }}>

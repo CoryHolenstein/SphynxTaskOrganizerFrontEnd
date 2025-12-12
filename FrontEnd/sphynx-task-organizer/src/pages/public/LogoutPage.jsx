@@ -1,6 +1,22 @@
-import { Box, Card, CardContent, Typography, CircularProgress } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import useAuthStore from "../../store/useAuthStore";
 
 export default function LogoutPage() {
+  const logout = useAuthStore((s) => s.logout);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    logout();
+    setDone(true);
+  }, [logout]);
+
   return (
     <Box
       sx={{
@@ -35,7 +51,7 @@ export default function LogoutPage() {
             You have been successfully logged out.
           </Typography>
 
-          <CircularProgress size={36} sx={{ mb: 2 }} />
+          {!done && <CircularProgress size={36} sx={{ mb: 2 }} />}
 
           <Typography variant="body2" color="text.secondary">
             You may close this window or log in again at any time.
