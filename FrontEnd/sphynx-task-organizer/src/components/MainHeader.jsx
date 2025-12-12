@@ -15,6 +15,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import TaskIcon from "@mui/icons-material/Task";
 import SettingsIcon from "@mui/icons-material/Settings";
+import InfoIcon from '@mui/icons-material/Info';
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -109,6 +110,14 @@ const MainHeader = () => {
             <SettingsIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Settings" />
+        </MenuItem>
+
+        
+        <MenuItem onClick={() => { navigate("/about"); handleMenuClose(); }}>
+          <ListItemIcon>
+            <InfoIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="About" />
         </MenuItem>
 
         <MenuItem
