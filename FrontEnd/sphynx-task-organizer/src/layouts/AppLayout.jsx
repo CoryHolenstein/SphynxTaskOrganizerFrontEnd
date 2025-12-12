@@ -19,7 +19,7 @@ export default function AppLayout() {
         <Outlet />
       </Box>
 
-
+      <Footer />
     </Box>
   );
 }

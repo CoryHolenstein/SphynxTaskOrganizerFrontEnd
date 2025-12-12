@@ -62,7 +62,7 @@ const MainHeader = () => {
             px: 2,
           }}
         >
-          <IconButton size="small" edge="start" onClick={handleMenuClick}>
+          <IconButton size="small" edge="start" onClick={handleMenuClick} aria-label="menu" sx={{ p: 2, mr: 2 }}>
             <MenuIcon />
           </IconButton>
 

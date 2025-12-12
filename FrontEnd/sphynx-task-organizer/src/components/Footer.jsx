@@ -26,20 +26,10 @@ export default function Footer() {
         }}
       >
         <Typography variant="body2" color="text.secondary">
-          © {new Date().getFullYear()} Your Company
+          © {new Date().getFullYear()} Monkey Cat Software. All rights reserved.
         </Typography>
 
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <Link href="/privacy" underline="hover" color="text.secondary">
-            Privacy
-          </Link>
-          <Link href="/terms" underline="hover" color="text.secondary">
-            Terms
-          </Link>
-          <Link href="/support" underline="hover" color="text.secondary">
-            Support
-          </Link>
-        </Box>
+    
       </Container>
     </Box>
   );
