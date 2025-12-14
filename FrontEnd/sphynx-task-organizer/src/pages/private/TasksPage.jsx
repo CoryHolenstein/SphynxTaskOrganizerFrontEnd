@@ -184,7 +184,14 @@ const TasksPage = () => {
   return (
     <>
 
-      <Box sx={{ pt: 10, pb: 4, minHeight: '100vh' }}>
+      <Box
+            sx={{
+                pt: 10,
+                pb: 4,
+                minHeight: '100vh',
+                backgroundColor: (theme) => theme.palette.background.default
+            }}
+        >
         <Container maxWidth="lg">
           <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
             Tasks Page
@@ -211,7 +218,12 @@ const TasksPage = () => {
 
           {/* ---------- CREATE ---------- */}
           {showCreateTask && (
-            <Card sx={{ mb: 4 }}>
+            <Card
+                    sx={{
+                        mb: 2,
+                        backgroundColor: (theme) => theme.palette.background.paper
+                    }}
+                >
               <CardContent>
                 <form onSubmit={handleCreateTask}>
                   <TextField
@@ -286,16 +298,25 @@ const TasksPage = () => {
                 <MenuItem value="yearly">Yearly</MenuItem>
               </Select>
             </FormControl>
-                <Box
+              <Box
                 sx={{
                     width: 320,
                     '& input': {
                     height: '40px',
                     padding: '0 14px',
-                    fontSize: '0.875rem'
+                    fontSize: '0.875rem',
+                    backgroundColor: (theme) =>
+                        theme.palette.mode === 'dark'
+                        ? theme.palette.background.paper
+                        : theme.palette.background.default,
+                    color: (theme) => theme.palette.text.primary,
+                    borderRadius: 1
+                    },
+                    '& input::placeholder': {
+                    color: (theme) => theme.palette.text.secondary
                     },
                     '& button': {
-                    color: 'rgba(0,0,0,0.54)'
+                    color: (theme) => theme.palette.text.secondary
                     }
                 }}
                 >
@@ -306,6 +327,7 @@ const TasksPage = () => {
                     onClear={() => setSearchQuery('')}
                 />
                 </Box>
+
 
           </Box>
 
