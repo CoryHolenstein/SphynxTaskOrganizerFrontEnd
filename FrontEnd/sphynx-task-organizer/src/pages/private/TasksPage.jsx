@@ -1,338 +1,410 @@
-
-
 import React, { useEffect, useState } from 'react';
-import { Container, TextField, Button, Box, Card, CardContent, Typography, Chip, Select, MenuItem, FormControl, InputLabel, Alert, CircularProgress } from '@mui/material';
+import {
+  Container,
+  TextField,
+  Button,
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Alert,
+  CircularProgress,
+  Modal
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import MainHeader from '../../components/MainHeader';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { createTask } from '../../api/CreateTask';
 import { getAllTasks } from '../../api/GetTasks';
 import { deleteTask } from '../../api/DeleteTask';
 import { useAuthStore } from '../../store/useAuthStore';
+import { SearchField } from '@aws-amplify/ui-react';
+
+const EMPTY_TASK = {
+  name: '',
+  description: '',
+  dueDate: '',
+  repeat: 'weekly'
+};
 
 const TasksPage = () => {
-    const muiTheme = useMuiTheme();
-    const { loginIncognito } = useAuthStore();
-    const userId = useAuthStore((state) => state.user?.email);
-    const MAX_TASKS_PER_USER = 100;
+  const muiTheme = useMuiTheme();
+  const { loginIncognito } = useAuthStore();
+  const userId = useAuthStore((state) => state.user?.email);
 
-    const [tasks, setTasks] = useState([]);
-    const [showCreateTask, setShowCreateTask] = useState(false);
-    const [filterRepeat, setFilterRepeat] = useState('all');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+  const MAX_TASKS_PER_USER = 100;
 
-    const [taskName, setTaskName] = useState('');
-    const [taskDescription, setTaskDescription] = useState('');
-    const [taskDueDate, setTaskDueDate] = useState('');
-    const [taskRepeat, setTaskRepeat] = useState('weekly');
+  // source data
+  const [tasks, setTasks] = useState([]);
 
-    const toggleCreateTask = () => {
-        setShowCreateTask(!showCreateTask);
+  // UI state
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [filterRepeat, setFilterRepeat] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // single task state (create + edit)
+  const [task, setTask] = useState(EMPTY_TASK);
+  const [editingTaskId, setEditingTaskId] = useState(null);
+
+  /* -------------------- helpers -------------------- */
+
+  const updateTaskField = (field, value) => {
+    setTask((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const getRepeatColor = (repeat) => {
+    const colors = {
+      daily: 'error',
+      weekly: 'primary',
+      monthly: 'info',
+      yearly: 'success'
     };
+    return colors[repeat] || 'default';
+  };
 
-    const handleCreateTask = async (e) => {
-        e.preventDefault();
-        
-        if (!userId) {
-            setError('User not authenticated');
-            return;
-        }
+  /* -------------------- derived data -------------------- */
 
-        if (tasks.length >= MAX_TASKS_PER_USER) {
-            setError(`Task limit of ${MAX_TASKS_PER_USER} reached. Please delete a task before adding a new one.`);
-            return;
-        }
+  const filteredTasks = tasks.filter((t) => {
+    const matchesRepeat =
+      filterRepeat === 'all' || t.repeat === filterRepeat;
 
-        setIsLoading(true);
-        setError(null);
+    const matchesSearch =
+      t.name.toLowerCase().includes(searchQuery) ||
+      t.description.toLowerCase().includes(searchQuery);
 
-        try {
-            const payload = {
-                userId,
-                name: taskName,
-                description: taskDescription,
-                dueDate: taskDueDate,
-                repeat: taskRepeat
-            };
+    return matchesRepeat && matchesSearch;
+  });
 
-            const result = await createTask(payload);
-            setTasks([...tasks, result.item]);
-            setTaskName('');
-            setTaskDescription('');
-            setTaskDueDate('');
-            setTaskRepeat('weekly');
-            setShowCreateTask(false);
-        } catch (err) {
-            setError('Failed to create task. Please try again.');
-            console.error('Error creating task:', err);
-        } finally {
-            setIsLoading(false);
-        }
+  const isTaskLimitReached = tasks.length >= MAX_TASKS_PER_USER;
+  const tasksRemaining = MAX_TASKS_PER_USER - tasks.length;
+
+  /* -------------------- CRUD -------------------- */
+
+  const loadTasks = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const fetchedTasks = await getAllTasks(userId);
+      setTasks(fetchedTasks || []);
+    } catch {
+      setError('Failed to load tasks.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+
+    if (!userId) {
+      setError('User not authenticated');
+      return;
     }
 
-    const handleDeleteTask = async (taskId) => {
-        if (!userId) {
-            setError('User not authenticated');
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            await deleteTask(userId, taskId);
-            setTasks(tasks.filter(task => task.taskId !== taskId));
-        } catch (err) {
-            setError('Failed to delete task. Please try again.');
-            console.error('Error deleting task:', err);
-        } finally {
-            setIsLoading(false);
-        }
+    if (isTaskLimitReached) {
+      setError(`Task limit of ${MAX_TASKS_PER_USER} reached.`);
+      return;
     }
 
-    const filteredTasks = filterRepeat === 'all' ? tasks : tasks.filter(task => task.repeat === filterRepeat);
-    const tasksRemaining = MAX_TASKS_PER_USER - tasks.length;
-    const isTaskLimitReached = tasks.length >= MAX_TASKS_PER_USER;
+    setIsLoading(true);
+    setError(null);
 
-    const getRepeatColor = (repeat) => {
-        const colors = {
-            daily: 'error',
-            weekly: 'primary',
-            monthly: 'info',
-            yearly: 'success'
-        };
-        return colors[repeat] || 'default';
-    };
+    try {
+      const payload = {
+        userId,
+        ...task
+      };
 
-    useEffect(() => {
-        // Initialize incognito user if not already authenticated
-        if (!userId) {
-            loginIncognito();
-        }
-    }, [userId, loginIncognito]);
+      const result = await createTask(payload);
+      setTasks((prev) => [...prev, result.item]);
 
-    useEffect(() => {
-        // Load tasks when userId is available
-        if (userId) {
-            loadTasks();
-        }
-    }, [userId]);
+      setTask(EMPTY_TASK);
+      setShowCreateTask(false);
+    } catch {
+      setError('Failed to create task.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const loadTasks = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            console.log('[TasksPage] Loading tasks for userId:', userId);
-            const fetchedTasks = await getAllTasks(userId);
-            setTasks(fetchedTasks || []);
-            console.log('[TasksPage] Loaded tasks:', fetchedTasks);
-        } catch (err) {
-            setError('Failed to load tasks. Please refresh the page.');
-            console.error('[TasksPage] Error loading tasks:', err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+  const handleDeleteTask = async (taskId) => {
+    if (!userId) return;
 
-    useEffect(() => {
-        console.log('Tasks updated:', tasks);
-    }, [tasks]);
+    setIsLoading(true);
+    setError(null);
 
+    try {
+      await deleteTask(userId, taskId);
+      setTasks((prev) => prev.filter((t) => t.taskId !== taskId));
+    } catch {
+      setError('Failed to delete task.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  const handleEditTask = (t) => {
+    setTask({
+      name: t.name,
+      description: t.description,
+      dueDate: t.dueDate,
+      repeat: t.repeat
+    });
+    setEditingTaskId(t.taskId);
+  };
 
+  const closeEditModal = () => {
+    setEditingTaskId(null);
+    setTask(EMPTY_TASK);
+  };
 
-return(
-    <Box sx={{ pt: 10, pb: 4, backgroundColor: (theme) => theme.palette.background.default, minHeight: '100vh' }}>
+  /* -------------------- effects -------------------- */
+
+  useEffect(() => {
+    if (!userId) loginIncognito();
+  }, [userId, loginIncognito]);
+
+  useEffect(() => {
+    if (userId) loadTasks();
+  }, [userId]);
+
+  /* -------------------- render -------------------- */
+
+  return (
+    <>
+
+      <Box sx={{ pt: 10, pb: 4, minHeight: '100vh' }}>
         <Container maxWidth="lg">
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', mb: 2 }}>
-                    Tasks Page
-                </Typography>
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-                        {error}
-                    </Alert>
-                )}
-                <Button 
-                    variant="contained" 
-                    color="primary" 
-                    onClick={toggleCreateTask}
+          <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
+            Tasks Page
+          </Typography>
+
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
+
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Tasks remaining: {tasksRemaining}
+          </Typography>
+
+          <Button
+            variant="contained"
+            sx={{ mb: 3 }}
+            onClick={() => setShowCreateTask((p) => !p)}
+            disabled={isLoading}
+          >
+            {showCreateTask ? 'Hide Create Task' : 'Show Create Task'}
+          </Button>
+
+          {/* ---------- CREATE ---------- */}
+          {showCreateTask && (
+            <Card sx={{ mb: 4 }}>
+              <CardContent>
+                <form onSubmit={handleCreateTask}>
+                  <TextField
+                    fullWidth
+                    label="Task Name"
+                    value={task.name}
+                    onChange={(e) => updateTaskField('name', e.target.value)}
+                    required
                     sx={{ mb: 2 }}
-                    disabled={isLoading}
-                >
-                    {showCreateTask ? 'Hide Create Task' : 'Show Create Task'}
-                </Button>
-            </Box>
+                  />
 
-            {showCreateTask && (
-                <Card sx={{ mb: 4, p: 2 }}>
-                    <CardContent>
-                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                            Create New Task
-                        </Typography>
-                        {isTaskLimitReached && (
-                            <Alert severity="error" sx={{ mb: 2 }}>
-                                You have reached the maximum task limit of {MAX_TASKS_PER_USER}. Please delete a task to add a new one.
-                            </Alert>
-                        )}
-                        <form onSubmit={handleCreateTask}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <TextField 
-                                    label="Task Name" 
-                                    variant="outlined" 
-                                    fullWidth 
-                                    value={taskName}
-                                    onChange={(e) => setTaskName(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                                <TextField 
-                                    label="Description" 
-                                    variant="outlined" 
-                                    fullWidth 
-                                    multiline 
-                                    rows={4}
-                                    value={taskDescription}
-                                    onChange={(e) => setTaskDescription(e.target.value)}
-                                    disabled={isLoading}
-                                />
-                                <TextField 
-                                    label="Due Date" 
-                                    type="date" 
-                                    variant="outlined" 
-                                    fullWidth 
-                                    InputLabelProps={{ shrink: true }}
-                                    value={taskDueDate}
-                                    onChange={(e) => setTaskDueDate(e.target.value)}
-                                    required
-                                    disabled={isLoading}
-                                />
-                                <FormControl fullWidth disabled={isLoading}>
-                                    <InputLabel>Repeat</InputLabel>
-                                    <Select 
-                                        value={taskRepeat}
-                                        onChange={(e) => setTaskRepeat(e.target.value)}
-                                        label="Repeat"
-                                    >
-                                        <MenuItem value="daily">Daily</MenuItem>
-                                        <MenuItem value="weekly">Weekly</MenuItem>
-                                        <MenuItem value="monthly">Monthly</MenuItem>
-                                        <MenuItem value="yearly">Yearly</MenuItem>
-                                    </Select>
-                                </FormControl>
-                                <Button 
-                                    variant="contained" 
-                                    color="primary" 
-                                    type="submit"
-                                    sx={{ alignSelf: 'flex-start' }}
-                                    disabled={isTaskLimitReached || isLoading}
-                                >
-                                    {isLoading ? <CircularProgress size={24} /> : 'Create Task'}
-                                </Button>
-                            </Box>
-                        </form>
-                    </CardContent>
-                </Card>
-            )}
+                  <TextField
+                    fullWidth
+                    label="Description"
+                    value={task.description}
+                    onChange={(e) => updateTaskField('description', e.target.value)}
+                    multiline
+                    rows={3}
+                    sx={{ mb: 2 }}
+                  />
 
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-                    Your Tasks ({tasks.length}/{MAX_TASKS_PER_USER})
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                    Tasks remaining: {tasksRemaining}
-                </Typography>
-                <FormControl sx={{ minWidth: 200, mb: 3 }} disabled={isLoading}>
-                    <InputLabel>Filter by Repeat</InputLabel>
-                    <Select 
-                        value={filterRepeat}
-                        onChange={(e) => setFilterRepeat(e.target.value)}
-                        label="Filter by Repeat"
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Due Date"
+                    InputLabelProps={{ shrink: true }}
+                    value={task.dueDate}
+                    onChange={(e) => updateTaskField('dueDate', e.target.value)}
+                    required
+                    sx={{ mb: 2 }}
+                  />
+
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel>Repeat</InputLabel>
+                    <Select
+                      value={task.repeat}
+                      label="Repeat"
+                      onChange={(e) => updateTaskField('repeat', e.target.value)}
                     >
-                        <MenuItem value="all">All Tasks</MenuItem>
-                        <MenuItem value="daily">Daily</MenuItem>
-                        <MenuItem value="weekly">Weekly</MenuItem>
-                        <MenuItem value="monthly">Monthly</MenuItem>
-                        <MenuItem value="yearly">Yearly</MenuItem>
+                      <MenuItem value="daily">Daily</MenuItem>
+                      <MenuItem value="weekly">Weekly</MenuItem>
+                      <MenuItem value="monthly">Monthly</MenuItem>
+                      <MenuItem value="yearly">Yearly</MenuItem>
                     </Select>
-                </FormControl>
+                  </FormControl>
 
-                {isLoading && filteredTasks.length === 0 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                        <CircularProgress />
-                    </Box>
-                )}
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={isLoading || isTaskLimitReached}
+                  >
+                    {isLoading ? <CircularProgress size={22} /> : 'Create Task'}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          )}
 
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr', md: '1fr' }, gap: 2 }}>
-                    {filteredTasks.length > 0 ? (
-                        filteredTasks.map((task) => (
-                            <Card 
-                                key={task.taskId}
-                                sx={{
-                                    backgroundColor: muiTheme.palette.mode === 'dark' ? '#1e1e1e' : '#ffffff',
-                                    '&:hover': {
-                                        boxShadow: muiTheme.palette.mode === 'dark' 
-                                            ? '0 8px 24px rgba(255, 255, 255, 0.1)'
-                                            : '0 8px 24px rgba(0, 0, 0, 0.15)',
-                                        transform: 'translateY(-4px)',
-                                    },
-                                    transition: 'all 0.3s ease',
-                                }}
-                            >
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 1 }}>
-                                        <Typography variant="h5" component="h3" sx={{ fontWeight: 'bold', flex: 1, color: muiTheme.palette.mode === 'dark' ? '#ffffff' : 'inherit' }}>
-                                            {task.name}
-                                        </Typography>
-                                        <Chip 
-                                            label={task.repeat} 
-                                            color={getRepeatColor(task.repeat)}
-                                            variant="outlined"
-                                            size="small"
-                                        />
-                                    </Box>
-                                    <Typography variant="body2" sx={{ mb: 1, color: muiTheme.palette.mode === 'dark' ? '#b0b0b0' : 'textSecondary' }}>
-                                        {task.description}
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ mb: 2, color: muiTheme.palette.mode === 'dark' ? '#64b5f6' : '#1976d2', fontWeight: 'bold' }}>
-                                        Due: {new Date(task.dueDate).toLocaleDateString()}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                        <Button 
-                                            variant="outlined" 
-                                            size="small"
-                                            startIcon={<EditIcon />}
-                                            disabled={isLoading}
-                                        >
-                                            Edit
-                                        </Button>
-                                        <Button 
-                                            variant="outlined" 
-                                            color="error" 
-                                            size="small"
-                                            startIcon={<DeleteIcon />}
-                                            onClick={() => handleDeleteTask(task.taskId)}
-                                            disabled={isLoading}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        ))
-                    ) : (
-                        <Typography variant="body1" color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
-                            No tasks found for the selected filter.
-                        </Typography>
-                    )}
+          {/* ---------- FILTERS ---------- */}
+          <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Filter by Repeat</InputLabel>
+              <Select
+                value={filterRepeat}
+                label="Filter by Repeat"
+                onChange={(e) => setFilterRepeat(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="daily">Daily</MenuItem>
+                <MenuItem value="weekly">Weekly</MenuItem>
+                <MenuItem value="monthly">Monthly</MenuItem>
+                <MenuItem value="yearly">Yearly</MenuItem>
+              </Select>
+            </FormControl>
+                <Box
+                sx={{
+                    width: 320,
+                    '& input': {
+                    height: '40px',
+                    padding: '0 14px',
+                    fontSize: '0.875rem'
+                    },
+                    '& button': {
+                    color: 'rgba(0,0,0,0.54)'
+                    }
+                }}
+                >
+                <SearchField
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
+                    onClear={() => setSearchQuery('')}
+                />
                 </Box>
-            </Box>
-        </Container>
-    </Box>
-);
 
-}
+          </Box>
+
+          {/* ---------- LIST ---------- */}
+          {filteredTasks.map((t) => (
+            <Card key={t.taskId} sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h6">{t.name}</Typography>
+                <Typography variant="body2">{t.description}</Typography>
+                <Typography variant="body2">
+                  Due: {new Date(t.dueDate).toLocaleDateString()}
+                </Typography>
+
+                <Chip
+                  label={t.repeat}
+                  color={getRepeatColor(t.repeat)}
+                  sx={{ mt: 1 }}
+                />
+
+                <Box sx={{ mt: 2 }}>
+                  <Button
+                    size="small"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleEditTask(t)}
+                  >
+                    Edit
+                  </Button>
+
+                  <Button
+                    size="small"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={() => handleDeleteTask(t.taskId)}
+                  >
+                    Delete
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Container>
+      </Box>
+
+      {/* ---------- EDIT MODAL ---------- */}
+      <Modal open={editingTaskId !== null} onClose={closeEditModal}>
+        <Box sx={{ p: 3, backgroundColor: 'background.paper', minWidth: 400 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            Edit Task
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="Task Name"
+            value={task.name}
+            onChange={(e) => updateTaskField('name', e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Description"
+            value={task.description}
+            onChange={(e) => updateTaskField('description', e.target.value)}
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            type="date"
+            label="Due Date"
+            InputLabelProps={{ shrink: true }}
+            value={task.dueDate}
+            onChange={(e) => updateTaskField('dueDate', e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Repeat</InputLabel>
+            <Select
+              value={task.repeat}
+              label="Repeat"
+              onChange={(e) => updateTaskField('repeat', e.target.value)}
+            >
+              <MenuItem value="daily">Daily</MenuItem>
+              <MenuItem value="weekly">Weekly</MenuItem>
+              <MenuItem value="monthly">Monthly</MenuItem>
+              <MenuItem value="yearly">Yearly</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button variant="contained" onClick={closeEditModal}>
+            Close
+          </Button>
+        </Box>
+      </Modal>
+    </>
+  );
+};
 
 export default TasksPage;
