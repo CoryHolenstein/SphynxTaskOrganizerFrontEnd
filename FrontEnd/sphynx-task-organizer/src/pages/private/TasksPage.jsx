@@ -22,15 +22,22 @@ import { useTheme as useMuiTheme } from '@mui/material/styles';
 import { createTask } from '../../api/CreateTask';
 import { getAllTasks } from '../../api/GetTasks';
 import { deleteTask } from '../../api/DeleteTask';
+import { updateTask } from '../../api/UpdateTask';
 import { useAuthStore } from '../../store/useAuthStore';
 import { SearchField } from '@aws-amplify/ui-react';
 
 const EMPTY_TASK = {
   name: '',
-  description: '',
   dueDate: '',
-  repeat: 'weekly'
+  location: '',
+  description: '',
+  repeat: 'weekly',
+  visibility: 'private',
+  notificationDate: '',
+  notificationTime: ''
 };
+
+const visibilityStates = ['Private', 'Friends', 'Public'];
 
 const TasksPage = () => {
   const muiTheme = useMuiTheme();
@@ -43,7 +50,6 @@ const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
 
   // UI state
-  const [showCreateTask, setShowCreateTask] = useState(false);
   const [filterRepeat, setFilterRepeat] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +57,7 @@ const TasksPage = () => {
 
   // single task state (create + edit)
   const [task, setTask] = useState(EMPTY_TASK);
+  const [creatingTask, setCreatingTask] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState(null);
 
   /* -------------------- helpers -------------------- */
@@ -130,7 +137,7 @@ const TasksPage = () => {
       setTasks((prev) => [...prev, result.item]);
 
       setTask(EMPTY_TASK);
-      setShowCreateTask(false);
+      setCreatingTask(false);
     } catch {
       setError('Failed to create task.');
     } finally {
@@ -159,14 +166,47 @@ const TasksPage = () => {
       name: t.name,
       description: t.description,
       dueDate: t.dueDate,
-      repeat: t.repeat
+      repeat: t.repeat,
+      location: t.location,
+      visibility: t.visibility,
+      notificationDate: t.notificationDate,
+      notificationTime: t.notificationTime
     });
     setEditingTaskId(t.taskId);
+  };
+
+  const handleUpdateTask = async (e) => {
+    e.preventDefault();
+
+    if (!userId || !editingTaskId) {
+      setError('User or task not found');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await updateTask(userId, editingTaskId, task);
+      
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.taskId === editingTaskId ? { ...t, ...task } : t
+        )
+      );
+
+      closeEditModal();
+    } catch {
+      setError('Failed to update task.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const closeEditModal = () => {
     setEditingTaskId(null);
     setTask(EMPTY_TASK);
+    setCreatingTask(false);
   };
 
   /* -------------------- effects -------------------- */
@@ -186,9 +226,8 @@ const TasksPage = () => {
 
       <Box
             sx={{
-                pt: 10,
                 pb: 4,
-                minHeight: '100vh',
+                minHeight: 'auto',
                 backgroundColor: (theme) => theme.palette.background.default
             }}
         >
@@ -210,77 +249,11 @@ const TasksPage = () => {
           <Button
             variant="contained"
             sx={{ mb: 3 }}
-            onClick={() => setShowCreateTask((p) => !p)}
+            onClick={() => setCreatingTask(true)}
             disabled={isLoading}
           >
-            {showCreateTask ? 'Hide Create Task' : 'Show Create Task'}
+            Create Task
           </Button>
-
-          {/* ---------- CREATE ---------- */}
-          {showCreateTask && (
-            <Card
-                    sx={{
-                        mb: 2,
-                        backgroundColor: (theme) => theme.palette.background.paper
-                    }}
-                >
-              <CardContent>
-                <form onSubmit={handleCreateTask}>
-                  <TextField
-                    fullWidth
-                    label="Task Name"
-                    value={task.name}
-                    onChange={(e) => updateTaskField('name', e.target.value)}
-                    required
-                    sx={{ mb: 2 }}
-                  />
-
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    value={task.description}
-                    onChange={(e) => updateTaskField('description', e.target.value)}
-                    multiline
-                    rows={3}
-                    sx={{ mb: 2 }}
-                  />
-
-                  <TextField
-                    fullWidth
-                    type="date"
-                    label="Due Date"
-                    InputLabelProps={{ shrink: true }}
-                    value={task.dueDate}
-                    onChange={(e) => updateTaskField('dueDate', e.target.value)}
-                    required
-                    sx={{ mb: 2 }}
-                  />
-
-                  <FormControl fullWidth sx={{ mb: 2 }}>
-                    <InputLabel>Repeat</InputLabel>
-                    <Select
-                      value={task.repeat}
-                      label="Repeat"
-                      onChange={(e) => updateTaskField('repeat', e.target.value)}
-                    >
-                      <MenuItem value="daily">Daily</MenuItem>
-                      <MenuItem value="weekly">Weekly</MenuItem>
-                      <MenuItem value="monthly">Monthly</MenuItem>
-                      <MenuItem value="yearly">Yearly</MenuItem>
-                    </Select>
-                  </FormControl>
-
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    disabled={isLoading || isTaskLimitReached}
-                  >
-                    {isLoading ? <CircularProgress size={22} /> : 'Create Task'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
 
           {/* ---------- FILTERS ---------- */}
           <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
@@ -336,16 +309,31 @@ const TasksPage = () => {
             <Card key={t.taskId} sx={{ mb: 2 }}>
               <CardContent>
                 <Typography variant="h6">{t.name}</Typography>
-                <Typography variant="body2">{t.description}</Typography>
-                <Typography variant="body2">
-                  Due: {new Date(t.dueDate).toLocaleDateString()}
-                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>{t.description}</Typography>
+                
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, mb: 2 }}>
+                  <Typography variant="body2">
+                    <strong>Due:</strong> {new Date(t.dueDate).toLocaleDateString()}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Location:</strong> {t.location || 'N/A'}
+                  </Typography>
+                  <Typography variant="body2">
+                    <strong>Visibility:</strong> {t.visibility ? t.visibility.charAt(0).toUpperCase() + t.visibility.slice(1) : 'N/A'}
+                  </Typography>
+                  {t.notificationDate && (
+                    <Typography variant="body2">
+                      <strong>Notification:</strong> {new Date(t.notificationDate).toLocaleDateString()} {t.notificationTime || ''}
+                    </Typography>
+                  )}
+                </Box>
 
-                <Chip
-                  label={t.repeat}
-                  color={getRepeatColor(t.repeat)}
-                  sx={{ mt: 1 }}
-                />
+                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                  <Chip
+                    label={t.repeat}
+                    color={getRepeatColor(t.repeat)}
+                  />
+                </Box>
 
                 <Box sx={{ mt: 2 }}>
                   <Button
@@ -372,10 +360,22 @@ const TasksPage = () => {
       </Box>
 
       {/* ---------- EDIT MODAL ---------- */}
-      <Modal open={editingTaskId !== null} onClose={closeEditModal}>
-        <Box sx={{ p: 3, backgroundColor: 'background.paper', minWidth: 400 }}>
+      <Modal open={editingTaskId !== null || creatingTask} onClose={closeEditModal}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            p: 3,
+            backgroundColor: 'background.paper',
+            minWidth: 400,
+            borderRadius: 2,
+            boxShadow: 24
+          }}
+        >
           <Typography variant="h6" sx={{ mb: 2 }}>
-            Edit Task
+            {editingTaskId !== null ? 'Edit Task' : 'Create Task'}
           </Typography>
 
           <TextField
@@ -388,16 +388,6 @@ const TasksPage = () => {
 
           <TextField
             fullWidth
-            label="Description"
-            value={task.description}
-            onChange={(e) => updateTaskField('description', e.target.value)}
-            multiline
-            rows={3}
-            sx={{ mb: 2 }}
-          />
-
-          <TextField
-            fullWidth
             type="date"
             label="Due Date"
             InputLabelProps={{ shrink: true }}
@@ -405,6 +395,25 @@ const TasksPage = () => {
             onChange={(e) => updateTaskField('dueDate', e.target.value)}
             sx={{ mb: 2 }}
           />
+
+          <TextField
+            fullWidth
+            type="text"
+            label="Location"
+            value={task.location}
+            onChange={(e) => updateTaskField('location', e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="Description"
+            value={task.description}
+            onChange={(e) => updateTaskField('description', e.target.value)}
+            multiline
+            rows={3}
+            sx={{ mb: 2 }}
+          />  
 
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>Repeat</InputLabel>
@@ -420,9 +429,53 @@ const TasksPage = () => {
             </Select>
           </FormControl>
 
-          <Button variant="contained" onClick={closeEditModal}>
-            Close
-          </Button>
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Visibility</InputLabel>
+            <Select
+              value={task.visibility}
+              label="Visibility"
+              onChange={(e) => updateTaskField('visibility', e.target.value)}
+            >
+              {visibilityStates.map((state) => (
+                <MenuItem key={state} value={state.toLowerCase()}>
+                  {state}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            type="date"
+            label="Notification Date"
+            InputLabelProps={{ shrink: true }}
+            value={task.notificationDate}
+            onChange={(e) => updateTaskField('notificationDate', e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            type="time"
+            label="Notification Time"
+            InputLabelProps={{ shrink: true }}
+            value={task.notificationTime}
+            onChange={(e) => updateTaskField('notificationTime', e.target.value)}
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              onClick={editingTaskId !== null ? handleUpdateTask : handleCreateTask}
+              disabled={isLoading}
+            >
+              {editingTaskId !== null ? 'Update' : 'Create'}
+            </Button>
+            <Button variant="outlined" onClick={closeEditModal}>
+              Cancel
+            </Button>
+          </Box>
         </Box>
       </Modal>
     </>

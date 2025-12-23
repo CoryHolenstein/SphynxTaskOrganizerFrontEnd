@@ -22,7 +22,7 @@ export default function Callback() {
 
       loginCognito(userData, tokens);
 
-      navigate("/home");
+      navigate("/dashboard");
     }
   }, [auth.isAuthenticated, auth.user]);
 

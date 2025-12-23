@@ -9,11 +9,9 @@ import Landing from "./pages/public/Landing";
 import Callback from "./pages/public/Callback";
 import LogoutPage from "./pages/public/LogoutPage";
 import ErrorPage from "./pages/public/ErrorPage";
+import AboutPage from "./pages/public/AboutPage";
 
-import HomePage from "./pages/private/HomePage";
-import AboutPage from "./pages/private/AboutPage";
-import TasksPage from "./pages/private/TasksPage";
-import SettingsPage from "./pages/private/SettingsPage";
+import DashboardPage from "./pages/private/DashboardPage";
 
 import useHydrateAuth from "./hooks/useHydrateAuth";
 
@@ -29,9 +27,10 @@ function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/callback" element={<Callback />} />
             <Route path="/logout" element={<LogoutPage />} />
+            <Route path="/about" element={<AboutPage />} />
           </Route>
 
-          {/* Protected pages (header + footer) */}
+          {/* Protected pages (dashboard with tabs) */}
           <Route
             element={
               <ProtectedRoute>
@@ -39,10 +38,7 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
 
           {/* 404 */}

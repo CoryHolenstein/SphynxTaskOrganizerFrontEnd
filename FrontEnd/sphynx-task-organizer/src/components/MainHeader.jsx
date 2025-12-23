@@ -10,14 +10,18 @@ import {
   ListItemText,
   Box,
   Container,
+  Tabs,
+  Tab,
+  BottomNavigation,
+  BottomNavigationAction,
+  useMediaQuery,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import LogoutIcon from "@mui/icons-material/Logout";
 import HomeIcon from "@mui/icons-material/Home";
 import TaskIcon from "@mui/icons-material/Task";
 import SettingsIcon from "@mui/icons-material/Settings";
-import InfoIcon from '@mui/icons-material/Info';
-import LogoutIcon from "@mui/icons-material/Logout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 const MainHeader = () => {
@@ -25,6 +29,11 @@ const MainHeader = () => {
   const open = Boolean(anchorEl);
   const navigate = useNavigate();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const currentTab = searchParams.get("tab") || "0";
+  const activeTab = parseInt(currentTab);
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -33,6 +42,16 @@ const MainHeader = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+
+  const handleTabChange = (event, newValue) => {
+    setSearchParams({ tab: newValue.toString() });
+  };
+
+  const tabs = [
+    { label: "Home", icon: <HomeIcon /> },
+    { label: "Tasks", icon: <TaskIcon /> },
+    { label: "Settings", icon: <SettingsIcon /> },
+  ];
 
   return (
     <>
@@ -43,80 +62,81 @@ const MainHeader = () => {
           backgroundColor: theme.palette.background.paper,
           color: theme.palette.text.primary,
           borderBottom: `1px solid ${theme.palette.divider}`,
-          height: 56, // smaller than default
-          justifyContent: "center",
           zIndex: 1200,
         }}
       >
-       <Toolbar
-        disableGutters
-        sx={{
-          minHeight: 56,
-        }}
-      >
-        <Container
-          maxWidth="lg"
+        <Toolbar
+          disableGutters
           sx={{
+            minHeight: 56,
             display: "flex",
+            justifyContent: isMobile ? "space-between" : "space-between",
             alignItems: "center",
             px: 2,
           }}
         >
-          <IconButton size="small" edge="start" onClick={handleMenuClick} aria-label="menu" sx={{ p: 2, mr: 2 }}>
-            <MenuIcon />
-          </IconButton>
-
-          <Box sx={{ flex: 1, textAlign: "center" }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          <Box sx={{ textAlign: "center", flex: isMobile ? 1 : "initial" }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: isMobile ? "1rem" : "1.1rem" }}>
               Sphynx Task Organizer
             </Typography>
           </Box>
-        </Container>
-      </Toolbar>
 
+          {!isMobile && (
+            <Tabs
+              value={activeTab}
+              onChange={handleTabChange}
+              sx={{
+                flex: 1,
+                mx: 2,
+                "& .MuiTab-root": {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  minHeight: 56,
+                  textTransform: "none",
+                  fontSize: "0.9rem",
+                },
+              }}
+            >
+              {tabs.map((tab, index) => (
+                <Tab
+                  key={index}
+                  icon={tab.icon}
+                  label={tab.label}
+                  iconPosition="start"
+                />
+              ))}
+            </Tabs>
+          )}
+
+          <IconButton
+            size="small"
+            edge="end"
+            onClick={handleMenuClick}
+            aria-label="menu"
+            sx={{ p: 1 }}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        </Toolbar>
       </AppBar>
 
       <Menu
         anchorEl={anchorEl}
         open={open}
         onClose={handleMenuClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
         PaperProps={{
           sx: {
-            minWidth: 280,
+            minWidth: 180,
             borderRadius: 2,
             mt: 1,
             boxShadow: theme.shadows[4],
           },
         }}
       >
-        <MenuItem onClick={() => { navigate("/home"); handleMenuClose(); }}>
-          <ListItemIcon>
-            <HomeIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Home" />
-        </MenuItem>
-
-        <MenuItem onClick={() => { navigate("/tasks"); handleMenuClose(); }}>
-          <ListItemIcon>
-            <TaskIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Tasks" />
-        </MenuItem>
-
-        <MenuItem onClick={() => { navigate("/settings"); handleMenuClose(); }}>
-          <ListItemIcon>
-            <SettingsIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Settings" />
-        </MenuItem>
-
-        
         <MenuItem onClick={() => { navigate("/about"); handleMenuClose(); }}>
-          <ListItemIcon>
-            <InfoIcon fontSize="small" />
-          </ListItemIcon>
           <ListItemText primary="About" />
         </MenuItem>
 
@@ -133,6 +153,25 @@ const MainHeader = () => {
           <ListItemText primary="Logout" />
         </MenuItem>
       </Menu>
+
+      {isMobile && (
+        <BottomNavigation
+          value={activeTab}
+          onChange={handleTabChange}
+          sx={{
+            backgroundColor: theme.palette.background.paper,
+            borderTop: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          {tabs.map((tab, index) => (
+            <BottomNavigationAction
+              key={index}
+              icon={tab.icon}
+              label={tab.label}
+            />
+          ))}
+        </BottomNavigation>
+      )}
     </>
   );
 };
